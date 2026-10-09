@@ -1,9 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QDebug>
 #include <QImage>
+#include <QDebug>
 #include <QMessageBox>
-#include <QPixmap>
+#include <utility>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::slotStartClicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::slotStopClicked);
     connect(m_controller, &ThreadController::progress, this, &MainWindow::slotProgress);
+    connect(m_controller, &ThreadController::finished, this, &MainWindow::slotWorkerFinished);
     connect(m_controller, &ThreadController::failed, this, &MainWindow::slotWorkerFailed);
 
     for (int i = 0; i < this->height() - 100; i++) {
@@ -35,34 +36,42 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::slotGenerate()
 {
-    QMutexLocker lock(&m_controller->m_worker->locker);
-    for (int i = 0; i < table.size(); i++)
-        for (int j = 0; j < table[i].size(); j++) {
-            if (i == 0 || i == table.size() - 1)
-                table[i][j] = 0;
-            else if (j == 0 || j == table[i].size() - 1)
-                table[i][j] = 0;
-            else
-                table[i][j] = !(bool) (rand() & 3);
+    {
+        QMutexLocker lock(&m_controller->m_worker->locker);
+        for (int i = 0; i < table.size(); i++)
+            for (int j = 0; j < table[i].size(); j++) {
+                if (i == 0 || i == table.size() - 1)
+                    table[i][j] = 0;
+                else if (j == 0 || j == table[i].size() - 1)
+                    table[i][j] = 0;
+                else
+                    table[i][j] = !(bool) (rand() & 3);
+            }
         }
-    lock.unlock();
     renderBoard();
 }
 
 void MainWindow::renderBoard()
 {
-    QMutexLocker lock(&m_controller->m_worker->locker);
-    if (table.isEmpty() || table[0].isEmpty()) {
-        return;
-    }
+    QImage image;
+    {
+        QMutexLocker lock(&m_controller->m_worker->locker);
+        if (table.isEmpty() || table[0].isEmpty()) {
+            return;
+        }
 
-    QImage image(table[0].size(), table.size(), QImage::Format_RGB32);
-    for (int i = 0; i < table.size(); i++) {
-        for (int j = 0; j < table[i].size(); j++) {
-            image.setPixel(j, i, table[i][j] ? qRgb(0, 0, 0) : qRgb(255, 255, 255));
+        image = QImage(table[0].size(), table.size(), QImage::Format_Grayscale8);
+        for (int y = 0; y < table.size(); ++y) {
+            auto *row = image.scanLine(y);
+            for (int x = 0; x < table[y].size(); ++x) {
+                row[x] = table[y][x] ? 0 : 255;
+            }
+            for (int x = table[y].size(); x < image.bytesPerLine(); ++x) {
+                row[x] = 255;
+            }
         }
     }
-    ui->boardLabel->setPixmap(QPixmap::fromImage(image));
+    ui->boardView->setImage(std::move(image));
 }
 
 MainWindow::~MainWindow()
@@ -82,20 +91,22 @@ void MainWindow::slotStartClicked()
 void MainWindow::slotStopClicked()
 {
     m_controller->stop();
-    ui->generateButton->setEnabled(true);
-    ui->startButton->setEnabled(true);
     ui->stopButton->setEnabled(false);
 }
 
-void MainWindow::slotProgress()
+void MainWindow::slotProgress(const QImage &frame)
 {
-    renderBoard();
+    ui->boardView->setImage(frame);
+}
+
+void MainWindow::slotWorkerFinished()
+{
+    ui->generateButton->setEnabled(true);
+    ui->startButton->setEnabled(true);
+    ui->stopButton->setEnabled(false);
 }
 
 void MainWindow::slotWorkerFailed(const QString &message)
 {
-    ui->generateButton->setEnabled(true);
-    ui->startButton->setEnabled(true);
-    ui->stopButton->setEnabled(false);
     QMessageBox::critical(this, tr("Ошибка вычисления"), message);
 }

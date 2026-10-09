@@ -41,24 +41,25 @@
      </layout>
     </item>
     <item>
-     <widget class="QLabel" name="boardLabel">
+     <widget class="BoardView" name="boardView">
       <property name="minimumSize">
        <size>
         <width>500</width>
         <height>400</height>
        </size>
       </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignHCenter|Qt::AlignTop</set>
-      </property>
      </widget>
     </item>
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>BoardView</class>
+   <extends>QWidget</extends>
+   <header>boardview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

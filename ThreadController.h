@@ -2,6 +2,7 @@
 #define THREADCONTROLLER_H
 
 #include "Worker.h"
+#include <QImage>
 #include <QObject>
 #include <QThread>
 
@@ -20,6 +21,7 @@ public:
         connect(m_worker, &Worker::progress, this, &ThreadController::progress);
         connect(m_worker, &Worker::failed, this, &ThreadController::failed);
         connect(m_worker, &Worker::finished, m_thread, &QThread::quit);
+        connect(m_thread, &QThread::finished, this, &ThreadController::finished);
     }
 
     ~ThreadController()
@@ -54,7 +56,7 @@ public slots:
 
 signals:
     void failed(const QString &message);
-    void progress(); // Прокси-сигнал от worker
+    void progress(const QImage &frame); // Прокси-сигнал от worker
     void finished(); // Прокси-сигнал завершения
 
 private:

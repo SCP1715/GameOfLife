@@ -15,6 +15,8 @@ add_executable(GameOfLife WIN32
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    boardview.cpp
+    boardview.h
     ThreadController.h
     Worker.h
 )
@@ -31,7 +33,7 @@ option(GAMEOFLIFE_BUILD_GPU_TESTS "Build tests that require a supported GPU" OFF
 if(GAMEOFLIFE_BUILD_GPU_TESTS)
     enable_testing()
     add_executable(GameOfLifeGpuTest tests/gpu_worker_test.cpp Worker.h)
-    target_link_libraries(GameOfLifeGpuTest PRIVATE Qt5::Core)
+    target_link_libraries(GameOfLifeGpuTest PRIVATE Qt5::Core Qt5::Gui)
     target_compile_options(GameOfLifeGpuTest PRIVATE /EHsc /D_SILENCE_AMP_DEPRECATION_WARNINGS)
     add_test(NAME GameOfLifeGpuTest COMMAND GameOfLifeGpuTest)
     get_target_property(_qt_core_runtime Qt5::Core IMPORTED_LOCATION_DEBUG)

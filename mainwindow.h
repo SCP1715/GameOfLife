@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "ThreadController.h"
+#include <QImage>
 #include <QMainWindow>
 #include <QVector>
 
@@ -29,7 +30,8 @@ private slots:
     void slotGenerate();
     void slotStartClicked();
     void slotStopClicked();
-    void slotProgress();
+    void slotProgress(const QImage &frame);
+    void slotWorkerFinished();
     void slotWorkerFailed(const QString &message);
 };
 

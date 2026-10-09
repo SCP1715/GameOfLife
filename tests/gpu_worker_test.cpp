@@ -13,9 +13,13 @@ int main(int argc, char *argv[])
     Worker worker(&board);
     int generations = 0;
     QString error;
-    QObject::connect(&worker, &Worker::progress, &application, [&] {
+    QImage lastFrame;
+    QObject::connect(&worker, &Worker::progress, &application, [&](const QImage &frame) {
         ++generations;
-        worker.stop();
+        lastFrame = frame;
+        if (generations == 2) {
+            worker.stop();
+        }
     }, Qt::DirectConnection);
     QObject::connect(&worker, &Worker::failed, &application, [&](const QString &message) {
         error = message;
@@ -24,17 +28,21 @@ int main(int argc, char *argv[])
     worker.start();
     worker.process();
 
-    if (!error.isEmpty() || generations != 1) {
+    if (!error.isEmpty() || generations != 2) {
         return 1;
     }
 
     const QVector<QVector<short>> expected = {
         {0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0},
-        {0, 0, 1, 0, 0},
-        {0, 0, 1, 0, 0},
+        {0, 0, 0, 0, 0},
+        {0, 1, 1, 1, 0},
+        {0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0},
     };
+    if (lastFrame.size() != QSize(5, 5) || lastFrame.format() != QImage::Format_Grayscale8
+        || lastFrame.bytesPerLine() != 8) {
+        return 2;
+    }
     if (board.size() != expected.size()) {
         return 2;
     }
@@ -44,6 +52,10 @@ int main(int argc, char *argv[])
         }
         for (int x = 0; x < expected[y].size(); ++x) {
             if (board[y][x] != expected[y][x]) {
+                return 2;
+            }
+            const QRgb expectedPixel = expected[y][x] ? qRgb(0, 0, 0) : qRgb(255, 255, 255);
+            if (lastFrame.pixel(x, y) != expectedPixel) {
                 return 2;
             }
         }
