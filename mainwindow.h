@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include "ThreadController.h"
-#include <amp.h>
 #include <QMainWindow>
 #include <QVector>
 
@@ -22,17 +21,16 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    void paintEvent(QPaintEvent *event);
+    void renderBoard();
     ThreadController *m_controller;
-    Concurrency::array_view<short, 2> table_gpu();
     QVector<QVector<short>> table;
-    std::atomic<bool> changed;
 
 private slots:
     void slotGenerate();
     void slotStartClicked();
     void slotStopClicked();
     void slotProgress();
+    void slotWorkerFailed(const QString &message);
 };
 
 #endif // MAINWINDOW_H

@@ -18,6 +18,7 @@ public:
 
         connect(m_thread, &QThread::started, m_worker, &Worker::process);
         connect(m_worker, &Worker::progress, this, &ThreadController::progress);
+        connect(m_worker, &Worker::failed, this, &ThreadController::failed);
         connect(m_worker, &Worker::finished, m_thread, &QThread::quit);
     }
 
@@ -37,11 +38,11 @@ public:
 public slots:
     void start()
     {
+        if (m_worker)
+            m_worker->start();
         if (!m_thread->isRunning()) {
             m_thread->start();
         }
-        if (m_worker)
-            m_worker->start();
     }
 
     void stop()
@@ -52,6 +53,7 @@ public slots:
     }
 
 signals:
+    void failed(const QString &message);
     void progress(); // Прокси-сигнал от worker
     void finished(); // Прокси-сигнал завершения
 
